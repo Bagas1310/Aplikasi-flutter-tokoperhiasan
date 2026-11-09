@@ -8,15 +8,6 @@ Aplikasi mobile toko perhiasan modern yang dibangun menggunakan framework **Flut
 
 ---
 
-## 📸 Tampilan Aplikasi
-
-> *Tambahkan screenshot aplikasi Anda di folder `assets/screenshots/` dan sesuaikan link di bawah ini.*
-
-| Halaman Utama | Detail Produk | Keranjang Belanja |
-| :---: | :---: | :---: |
-| `![Home](assets/screenshots/home.png)` | `![Detail](assets/screenshots/detail.png)` | `![Cart](assets/screenshots/cart.png)` |
-
----
 
 ## ✨ Fitur Utama
 
