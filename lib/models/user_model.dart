@@ -21,6 +21,20 @@ class UserModel {
     required this.memberSince,
   });
 
+  String get username => fullName;
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'username': fullName,
+        'email': email,
+        'phone': phone,
+        'address': address,
+        'bio': bio,
+        'avatar_url': avatarUrl,
+        'profile_picture_path': profilePicturePath,
+        'member_since': memberSince.toIso8601String(),
+      };
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'fullName': fullName,
@@ -33,17 +47,37 @@ class UserModel {
         'memberSince': memberSince.toIso8601String(),
       };
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] as String,
-        fullName: json['fullName'] as String,
-        email: json['email'] as String,
-        phone: json['phone'] as String? ?? '',
-        address: json['address'] as String? ?? '',
-        bio: json['bio'] as String? ?? '',
-        avatarUrl: json['avatarUrl'] as String? ?? '',
-        profilePicturePath: json['profilePicturePath'] as String?,
-        memberSince: DateTime.parse(json['memberSince'] as String),
+  factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(
+        id: map['id']?.toString() ?? '',
+        fullName: (map['username'] ??
+                map['fullName'] ??
+                map['nama'] ??
+                map['name'])
+            ?.toString() ??
+            '',
+        email: map['email']?.toString() ?? '',
+        phone: (map['phone'] ?? map['no_telepon'] ?? map['telepon'])
+                ?.toString() ??
+            '',
+        address: (map['address'] ?? map['alamat'])?.toString() ?? '',
+        bio: map['bio']?.toString() ?? '',
+        avatarUrl:
+            (map['avatar_url'] ?? map['avatarUrl'])?.toString() ?? '',
+        profilePicturePath: (map['profile_picture_path'] ??
+                map['profilePicturePath'] ??
+                map['foto_profil_path'])
+            ?.toString(),
+        memberSince: map['member_since'] != null
+            ? DateTime.tryParse(map['member_since'].toString()) ??
+                DateTime.now()
+            : (map['memberSince'] != null
+                ? DateTime.tryParse(map['memberSince'].toString()) ??
+                    DateTime.now()
+                : DateTime.now()),
       );
+
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      UserModel.fromMap(json);
 
   UserModel copyWith({
     String? id,

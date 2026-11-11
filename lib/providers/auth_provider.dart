@@ -3,14 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/database_helper.dart';
 import '../models/user_model.dart';
 
 class AuthProvider extends ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
-
-  // Simple in-memory "database" backed by SharedPreferences
-  final Map<String, Map<String, String>> _registeredUsers = {};
 
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
@@ -21,8 +19,16 @@ class AuthProvider extends ChangeNotifier {
     final userData = prefs.getString('current_user');
     if (userData != null) {
       try {
-        _currentUser =
+        final cached =
             UserModel.fromJson(jsonDecode(userData) as Map<String, dynamic>);
+        
+        // Refresh with latest data from SQLite database
+        final dbUser = await DatabaseHelper.instance.getUserById(cached.id);
+        if (dbUser != null) {
+          _currentUser = dbUser;
+        } else {
+          _currentUser = cached;
+        }
         notifyListeners();
       } catch (_) {
         await prefs.remove('current_user');
@@ -34,25 +40,35 @@ class AuthProvider extends ChangeNotifier {
     required String fullName,
     required String email,
     required String password,
+    String? phone,
+    String? address,
   }) async {
     _isLoading = true;
     notifyListeners();
 
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    // Check if email already registered in SQLite
+    final cleanEmail = email.toLowerCase().trim();
+    final existingUser =
+        await DatabaseHelper.instance.getUserByEmail(cleanEmail);
 
-    final key = email.toLowerCase().trim();
-    if (_registeredUsers.containsKey(key)) {
+    if (existingUser != null) {
       _isLoading = false;
       notifyListeners();
       return 'Email sudah terdaftar. Silakan login.';
     }
 
-    _registeredUsers[key] = {
-      'fullName': fullName,
-      'email': email,
-      'password': password,
-    };
+    final newUser = UserModel(
+      id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
+      fullName: fullName.trim(),
+      email: cleanEmail,
+      phone: phone?.trim() ?? '',
+      address: address?.trim() ?? '',
+      bio: 'Pencinta gelang aesthetic 🌸 | Member since 2026',
+      memberSince: DateTime.now(),
+    );
+
+    // Save into SQLite Database
+    await DatabaseHelper.instance.insertUser(newUser, password);
 
     _isLoading = false;
     notifyListeners();
@@ -66,40 +82,34 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    final cleanEmail = email.toLowerCase().trim();
 
-    final key = email.toLowerCase().trim();
+    // Check user in SQLite Database
+    final userMap = await DatabaseHelper.instance.getUserByEmail(cleanEmail);
 
-    // Check registered users first, then allow demo login
-    if (_registeredUsers.containsKey(key)) {
-      if (_registeredUsers[key]!['password'] != password) {
+    if (userMap != null) {
+      if (userMap[DatabaseHelper.colPassword] != password) {
         _isLoading = false;
         notifyListeners();
         return 'Password salah. Coba lagi ya!';
       }
-      _currentUser = UserModel(
-        id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
-        fullName: _registeredUsers[key]!['fullName']!,
-        email: email,
-        phone: '0812-3456-7890',
-        address: 'Jl. Gelang Indah No. 7, Bandung',
-        bio: 'Pencinta gelang aesthetic 🌸 | Member since 2026',
-        memberSince: DateTime.now(),
-      );
+      _currentUser = UserModel.fromMap(userMap);
     } else {
-      // Demo login – allow any email/password
-      _currentUser = UserModel(
+      // Demo login: automatically register into SQLite and log in
+      final demoUser = UserModel(
         id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
         fullName: _extractName(email),
-        email: email,
+        email: cleanEmail,
         phone: '0812-3456-7890',
         address: 'Jl. Gelang Indah No. 7, Bandung',
         bio: 'Pencinta gelang aesthetic 🌸 | Member since 2026',
         memberSince: DateTime.now(),
       );
+      await DatabaseHelper.instance.insertUser(demoUser, password);
+      _currentUser = demoUser;
     }
 
-    // Persist session
+    // Persist session to SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
         'current_user', jsonEncode(_currentUser!.toJson()));
@@ -119,15 +129,34 @@ class AuthProvider extends ChangeNotifier {
   Future<void> updateProfilePicture(String picturePath) async {
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(profilePicturePath: picturePath);
+
+      // Persist to SQLite Database
+      await DatabaseHelper.instance
+          .updateProfilePicture(_currentUser!.id, picturePath);
+
+      // Persist session
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
           'current_user', jsonEncode(_currentUser!.toJson()));
+
       notifyListeners();
     }
   }
 
+  Future<void> updateUserProfile(UserModel updatedUser) async {
+    _currentUser = updatedUser;
+    await DatabaseHelper.instance.updateUserProfile(updatedUser);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'current_user', jsonEncode(_currentUser!.toJson()));
+
+    notifyListeners();
+  }
+
   String _extractName(String email) {
     final name = email.split('@').first;
+    if (name.isEmpty) return 'Bestie';
     return name[0].toUpperCase() + name.substring(1);
   }
 }

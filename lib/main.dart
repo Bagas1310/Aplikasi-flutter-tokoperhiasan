@@ -2,12 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'core/theme.dart';
+import 'data/database_helper.dart';
+import 'data/product_data.dart';
 import 'providers/auth_provider.dart';
 import 'providers/cart_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/main_shell.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize database
+  await DatabaseHelper.instance.database;
+  
+  // Load initial data from database
+  await ProductData.loadFromDatabase();
+
   runApp(const BarelyShopApp());
 }
 
@@ -30,6 +40,10 @@ class _BarelyShopAppState extends State<BarelyShopApp> {
   }
 
   void _onAuthChanged() {
+    // Update cart provider with current user ID
+    if (_authProvider.currentUser != null) {
+      _cartProvider.setUserId(_authProvider.currentUser!.id);
+    }
     setState(() {});
   }
 

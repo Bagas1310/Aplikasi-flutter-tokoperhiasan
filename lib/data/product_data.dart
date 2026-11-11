@@ -1,9 +1,10 @@
 import '../models/product_model.dart';
+import 'database_helper.dart';
 
 class ProductData {
   ProductData._();
 
-  static const List<Product> products = [
+  static const List<Product> initialProducts = [
     Product(
       id: '1',
       name: 'Dreamy Pearl Beads',
@@ -110,6 +111,23 @@ class ProductData {
       rating: 4.7,
     ),
   ];
+
+  static List<Product> _cachedProducts = [];
+
+  static List<Product> get products =>
+      _cachedProducts.isNotEmpty ? _cachedProducts : initialProducts;
+
+  static set products(List<Product> newProducts) {
+    _cachedProducts = newProducts;
+  }
+
+  static Future<List<Product>> loadFromDatabase() async {
+    final list = await DatabaseHelper.instance.getAllProducts();
+    if (list.isNotEmpty) {
+      _cachedProducts = list;
+    }
+    return products;
+  }
 
   static List<String> get categories =>
       products.map((p) => p.category).toSet().toList();

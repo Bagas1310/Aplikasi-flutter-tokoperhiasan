@@ -16,6 +16,8 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _addressCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
   bool _obscure = true;
@@ -45,6 +47,8 @@ class _RegisterScreenState extends State<RegisterScreen>
     _animCtrl.dispose();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _addressCtrl.dispose();
     _passCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
@@ -58,6 +62,8 @@ class _RegisterScreenState extends State<RegisterScreen>
       fullName: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       password: _passCtrl.text,
+      phone: _phoneCtrl.text.trim(),
+      address: _addressCtrl.text.trim(),
     );
 
     if (!mounted) return;
@@ -196,6 +202,43 @@ class _RegisterScreenState extends State<RegisterScreen>
                                   }
                                   if (!v.contains('@')) {
                                     return 'Format email tidak valid';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Phone Number
+                              TextFormField(
+                                controller: _phoneCtrl,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nomor Telepon',
+                                  prefixIcon: Icon(Icons.phone_outlined,
+                                      color: AppColors.accentPinkDark),
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Nomor telepon wajib diisi';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Address
+                              TextFormField(
+                                controller: _addressCtrl,
+                                maxLines: 2,
+                                decoration: const InputDecoration(
+                                  labelText: 'Alamat Lengkap',
+                                  prefixIcon: Icon(Icons.location_on_outlined,
+                                      color: AppColors.accentPinkDark),
+                                  alignLabelWithHint: true,
+                                ),
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Alamat wajib diisi';
                                   }
                                   return null;
                                 },

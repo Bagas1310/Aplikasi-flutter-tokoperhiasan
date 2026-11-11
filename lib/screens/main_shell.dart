@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import 'home/home_screen.dart';
 import 'cart/cart_screen.dart';
@@ -16,12 +17,33 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
 
-  final _screens = const [
-    HomeScreen(),
-    CartScreen(),
-    ProfileScreen(),
+  late final List<Widget> _screens = [
+    const HomeScreen(),
+    const CartScreen(),
+    ProfileScreen(key: _profileKey),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserCart();
+  }
+
+  Future<void> _loadUserCart() async {
+    final auth = AuthProviderScope.of(context);
+    final cart = CartProviderScope.of(context);
+    final userId = auth.currentUser?.id;
+    if (userId != null) {
+      await cart.loadCart(userId: userId);
+      cart.setOnCheckoutComplete(_refreshProfileOrders);
+    }
+  }
+  
+  void _refreshProfileOrders() {
+    _profileKey.currentState?.refreshOrders();
+  }
 
   @override
   Widget build(BuildContext context) {

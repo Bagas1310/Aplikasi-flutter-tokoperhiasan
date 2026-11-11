@@ -436,10 +436,13 @@ class CartScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(color: AppColors.textHint)),
           ),
           ElevatedButton(
-            onPressed: () {
-              cart.clearCart();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
+            onPressed: () async {
+              final navigator = Navigator.of(ctx);
+              final messenger = ScaffoldMessenger.of(context);
+              await cart.checkout();
+
+              navigator.pop();
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text(
                     'Pesanan berhasil! Terima kasih 🎉',
